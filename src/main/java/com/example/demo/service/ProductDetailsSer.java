@@ -20,17 +20,25 @@ public class ProductDetailsSer {
     khi sản phẩm đủ số lượng thì trả ra tiêu đề mua thành công và
     trừ đúng số lượng trong bảng ProductDetails với tất cả các đời thuộc tính.
      */
-    public Respon<?> shopping(int productdetailid, int quantity){
-        if(productDetailsRepo.sanPhamDoiCuoi().contains(productdetailid)){
-            Optional<ProductDetails>op = productDetailsRepo.findById(productdetailid);
+    public Respon<?> shopping(int productdetailid, int quantity) {
+        if (productDetailsRepo.sanPhamDoiCuoi().contains(productdetailid)) {
+            Optional<ProductDetails> op = productDetailsRepo.findById(productdetailid);
             ProductDetails pd = op.get();
-            if(pd.getQuantity()==0){
+            if (pd.getQuantity() == 0) {
                 return new Respon<>(3, "San pham da het hang", pd);
             }
-            if(pd.getQuantity()<quantity){
+            if (pd.getQuantity() < quantity) {
                 return new Respon<>(2, "So luong san pham trong cua hang khong du", pd);
             }
-            pd.setQuantity(pd.getQuantity()-quantity);
+            Integer parentid = op.get().getParentID();
+            while (parentid != null) {
+                Optional<ProductDetails> optional = productDetailsRepo.findById(parentid);
+                optional.get().setQuantity(optional.get().getQuantity() - quantity);
+                productDetailsRepo.save(optional.get());
+                parentid = optional.get().getParentID();
+
+            }
+            pd.setQuantity(pd.getQuantity() - quantity);
             productDetailsRepo.save(pd);
             return new Respon<>(0, "Dat don hang thanh cong", null);
         }
@@ -44,7 +52,14 @@ public class ProductDetailsSer {
         if (productDetailsRepo.sanPhamDoiCuoi().contains(productdetailid)) {
             Optional<ProductDetails> op = productDetailsRepo.findById(productdetailid);
             ProductDetails pd = op.get();
-            pd.setQuantity(pd.getQuantity()+quantity);
+            Integer parentid = op.get().getParentID();
+            while (parentid != null) {
+                Optional<ProductDetails> optional = productDetailsRepo.findById(parentid);
+                optional.get().setQuantity(optional.get().getQuantity() + quantity);
+                productDetailsRepo.save(optional.get());
+                parentid = optional.get().getParentID();
+            }
+            pd.setQuantity(pd.getQuantity() + quantity);
             productDetailsRepo.save(pd);
             return new Respon<>(0, "Cap nhat thanh cong", pd);
         }
